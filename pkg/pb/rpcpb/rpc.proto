@@ -1,0 +1,59 @@
+syntax = "proto3";
+package rpcpb;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = false;
+
+enum Type {
+    Add      = 0;
+    Search   = 1;
+}
+
+// Request the busybee request
+message Request {
+    uint64         id     = 1  [(gogoproto.customname) = "ID"];
+    Type           type   = 2;
+    AddRequest     add    = 3  [(gogoproto.nullable) = false];
+    SearchRequest  search = 4  [(gogoproto.nullable) = false];
+}
+
+// Response the busybee response
+message Response {
+    uint64         id     = 1  [(gogoproto.customname) = "ID"];
+    Type           type   = 2;
+    ErrorResponse  error  = 3  [(gogoproto.nullable) = false];
+    AddResponse    add    = 4  [(gogoproto.nullable) = false];
+    SearchResponse search = 5  [(gogoproto.nullable) = false];
+}
+
+// AddRequest add request
+message AddRequest {
+    repeated float xbs  = 1;
+    repeated int64 xids = 2;
+}
+
+// AddResponse add response
+message AddResponse {
+}
+
+// SearchRequest search request
+message SearchRequest {
+    repeated float xqs     = 1;
+    repeated int64 topks   = 2;
+    repeated bytes bitmaps = 3;
+}
+
+// SearchResponse search response
+message SearchResponse {
+    repeated float scores = 1;
+    repeated int64 xids   = 2;
+}
+
+// ErrorResponse error response 
+message ErrorResponse {
+    string error = 1;
+}

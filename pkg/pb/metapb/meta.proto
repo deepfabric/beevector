@@ -1,0 +1,22 @@
+syntax = "proto3";
+package metapb;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = false;
+
+// DBState db state
+enum DBState {
+    // RU read and update
+    RU  = 0;
+    // RWU read, append write and update
+    RWU = 1;
+}
+
+// DB db
+message DB {
+    DBState state = 1;
+}
