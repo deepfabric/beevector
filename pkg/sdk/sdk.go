@@ -4,7 +4,9 @@ import (
 	"sync"
 
 	"github.com/deepfabric/beevector/pkg/api"
+	"github.com/deepfabric/beevector/pkg/pb/rpcpb"
 	"github.com/fagongzi/goetty"
+	"github.com/fagongzi/util/task"
 )
 
 // Client beevector sdk
@@ -12,7 +14,7 @@ type Client interface {
 	// Add add vectors with xids
 	Add(xbs []float32, xids []int64) error
 	// Search search topk with xb and bitmaps
-	Search(xqs []float32, topks []int64, bitmaps [][]byte) (scores []float32, xids []int64, err error)
+	Search(xq []float32, topk int64, bitmap []byte) ([]float32, []int64, error)
 }
 
 type client struct {
@@ -20,6 +22,7 @@ type client struct {
 
 	id    uint64
 	conns []goetty.IOSession
+	msgs  []*task.Queue
 }
 
 // NewClient create a beevector client
@@ -39,6 +42,10 @@ func (c *client) Add(xbs []float32, xids []int64) error {
 	return nil
 }
 
-func (c *client) Search(xqs []float32, topks []int64, bitmaps [][]byte) ([]float32, []int64, error) {
+func (c *client) Search(xq []float32, topk int64, bitmap []byte) ([]float32, []int64, error) {
 	return nil, nil, nil
+}
+
+func (c *client) addToSend(req *rpcpb.Request) {
+
 }
