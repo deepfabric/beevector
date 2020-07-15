@@ -18,13 +18,14 @@ var (
 type vdb struct {
 	sync.RWMutex
 
-	id     uint64
-	name   string
-	path   string
-	dbPath string
-	dim    int
-	db     *vectodb.VectoDB
-	state  metapb.DBState
+	destoried bool
+	id        uint64
+	name      string
+	path      string
+	dbPath    string
+	dim       int
+	db        *vectodb.VectoDB
+	state     metapb.DBState
 }
 
 // NewVectoDB create a vectordb
@@ -44,6 +45,7 @@ func NewVectoDB(path string, id uint64, dim int, state metapb.DBState) (DB, erro
 		dim:    dim,
 		name:   name,
 		id:     id,
+		db:     db,
 	}, nil
 }
 
@@ -125,7 +127,7 @@ func (v *vdb) Records() (uint64, error) {
 	defer v.RUnlock()
 
 	if v.destoried {
-		return errDestoried
+		return 0, errDestoried
 	}
 
 	total, err := v.db.GetTotal()
@@ -195,4 +197,5 @@ func (v *vdb) resetDB() error {
 
 	v.db = db
 	v.destoried = false
+	return nil
 }
