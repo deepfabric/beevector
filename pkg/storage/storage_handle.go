@@ -31,28 +31,3 @@ func (s *storage) add(shard bhmetapb.Shard, req *raftcmdpb.Request, attrs map[st
 
 	return 0, 0, resp
 }
-
-func (s *storage) search(shard bhmetapb.Shard, req *raftcmdpb.Request, attrs map[string]interface{}) *raftcmdpb.Response {
-	resp := pb.AcquireResponse()
-	search := &rpcpb.SearchRequest{}
-	protoc.MustUnmarshal(search, resp.Value)
-
-	db := s.mustLoadDB(shard.ID)
-	scores, xids, err := db.Search(search.Xqs, search.Topks, search.Bitmaps)
-	if err != nil {
-		log.Fatalf("shard %d search failed with %+v",
-			shard.ID,
-			err)
-	}
-
-	searchResp := &rpcpb.SearchResponse{}
-	searchResp.Scores = scores
-	searchResp.Xids = xids
-
-	if req.LastBroadcast && db.State() != metapb.RWU {
-		resp.ContinueBroadcast = true
-	}
-
-	resp.Value = protoc.MustMarshal(searchResp)
-	return resp
-}

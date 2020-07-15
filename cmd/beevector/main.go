@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -23,7 +22,6 @@ var (
 	addr      = flag.String("addr", "127.0.0.1:8081", "beehive api address")
 	addrPPROF = flag.String("addr-pprof", "", "pprof")
 	data      = flag.String("data", "", "data path")
-	stores    = flag.Uint64("stores", 1, "Number of store count.")
 	wait      = flag.Int("wait", 0, "wait")
 	version   = flag.Bool("version", false, "Show version info")
 
@@ -66,20 +64,17 @@ func main() {
 		RebuildIndexInterval: time.Second * time.Duration(*rebuildIndexIntervalSec),
 	}
 
-	var metaStores []beehiveStorage.MetadataStorage
-	var dataStores []beehiveStorage.DataStorage
-
-	for i := uint64(0); i < *stores; i++ {
-		store, err := badger.NewStorage(filepath.Join(*data, fmt.Sprintf("badger-%d", i)))
-		if err != nil {
-			log.Fatalf("create badger failed with %+v", err)
-		}
-
-		metaStores = append(metaStores, store)
-		dataStores = append(dataStores, store)
+	metaStore, err := badger.NewStorage(filepath.Join(*data, "badger-metadata"))
+	if err != nil {
+		log.Fatalf("create badger failed with %+v", err)
 	}
 
-	store, err := storage.NewStorage(cfg, metaStores, dataStores)
+	dataStore, err := badger.NewStorage(filepath.Join(*data, "badger-data"))
+	if err != nil {
+		log.Fatalf("create badger failed with %+v", err)
+	}
+
+	store, err := storage.NewStorage(cfg, metaStore, []beehiveStorage.DataStorage{dataStore})
 	if err != nil {
 		log.Fatalf("create storage failed with %+v", err)
 	}

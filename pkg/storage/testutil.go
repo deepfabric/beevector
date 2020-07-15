@@ -70,7 +70,7 @@ func NewTestStorage(t *testing.T, start bool) (Storage, func()) {
 		RebuildIndexInterval: time.Second,
 	}
 
-	store, err := NewStorageWithOptions(cfg, []bhstorage.MetadataStorage{s},
+	store, err := NewStorageWithOptions(cfg, s,
 		[]bhstorage.DataStorage{s},
 		raftstore.WithEnsureNewShardInterval(time.Millisecond*200))
 	assert.NoError(t, err, "NewTestStorage failed")

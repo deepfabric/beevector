@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"context"
 	"math"
 	"sync"
 	"time"
@@ -29,6 +28,7 @@ type Storage interface {
 	Close()
 
 	AsyncExecCommand(interface{}, func(interface{}, []byte, error), interface{})
+	AsyncBroadcastCommand(interface{}, func(interface{}, [][]byte, error), interface{}, bool)
 }
 
 type storage struct {
@@ -42,18 +42,18 @@ type storage struct {
 
 // NewStorage returns a beehive request handler
 func NewStorage(cfg Cfg,
-	metadataStorages []bhstorage.MetadataStorage,
+	metadataStorage bhstorage.MetadataStorage,
 	dataStorages []bhstorage.DataStorage) (Storage, error) {
-	return NewStorageWithOptions(cfg, metadataStorages, dataStorages)
+	return NewStorageWithOptions(cfg, metadataStorage, dataStorages)
 }
 
 // NewStorageWithOptions returns a beehive request handler
 func NewStorageWithOptions(cfg Cfg,
-	metadataStorages []bhstorage.MetadataStorage,
+	metadataStorage bhstorage.MetadataStorage,
 	dataStorages []bhstorage.DataStorage, opts ...raftstore.Option) (Storage, error) {
 
 	if cfg.dbCreateFunc == nil {
-		cfg.dbCreateFunc = db.NewDB
+		cfg.dbCreateFunc = db.NewVectoDB
 	}
 
 	s := &storage{
@@ -65,9 +65,11 @@ func NewStorageWithOptions(cfg Cfg,
 	opts = append(opts, raftstore.WithCustomSplitCheckFunc(s.customSplitCheck))
 	opts = append(opts, raftstore.WithCustomSplitCompletedFunc(s.customSplitCompleted))
 	opts = append(opts, raftstore.WithCustomCanReadLocalFunc(s.customCanReadLocalFunc))
+	opts = append(opts, raftstore.WithMaxProposalBytes(32*1024*1024))
+	opts = append(opts, raftstore.WithReadBatchFunc(s.readBatch))
 
 	store, err := beehive.CreateRaftStoreFromFile(cfg.DataPath,
-		metadataStorages,
+		metadataStorage,
 		dataStorages,
 		opts...)
 	if err != nil {
@@ -91,12 +93,15 @@ func NewStorageWithOptions(cfg Cfg,
 }
 
 func (s *storage) Start() error {
-	s.runner.RunCancelableTask(s.rebuildIndex)
 	return nil
 }
 
 func (s *storage) AsyncExecCommand(cmd interface{}, cb func(interface{}, []byte, error), arg interface{}) {
 	s.app.AsyncExecWithTimeout(cmd, cb, defaultRPCTimeout, arg)
+}
+
+func (s *storage) AsyncBroadcastCommand(cmd interface{}, cb func(interface{}, [][]byte, error), arg interface{}, mustLeader bool) {
+	s.app.AsyncBroadcast(cmd, 0, cb, defaultRPCTimeout, arg, mustLeader)
 }
 
 func (s *storage) Close() {
@@ -105,48 +110,8 @@ func (s *storage) Close() {
 	s.store.Stop()
 }
 
-func (s *storage) rebuildIndex(ctx context.Context) {
-	log.Infof("rebuild db index task started")
-	timer := time.NewTicker(s.cfg.RebuildIndexInterval)
-	defer timer.Stop()
-
-	var builds []db.DB
-	alreadyRebuilds := make(map[interface{}]db.DB)
-	for {
-		select {
-		case <-ctx.Done():
-			log.Infof("rebuild db index task stopped")
-			return
-		case <-timer.C:
-			c := 0
-			builds = builds[:0]
-			s.dbs.Range(func(key, value interface{}) bool {
-				if _, ok := alreadyRebuilds[key]; !ok && len(builds) < s.cfg.LimitRebuildIndex {
-					builds = append(builds, value.(db.DB))
-					alreadyRebuilds[key] = value.(db.DB)
-				}
-				c++
-				return true
-			})
-
-			if c > 0 {
-				if len(builds) == 0 {
-					for key := range alreadyRebuilds {
-						delete(alreadyRebuilds, key)
-					}
-				} else {
-					for _, db := range builds {
-						db.UpdateIndex()
-					}
-				}
-			}
-		}
-	}
-}
-
 func (s *storage) initHandleFuncs() {
 	s.AddWriteFunc("add", uint64(rpcpb.Add), s.add)
-	s.AddReadFunc("search", uint64(rpcpb.Search), s.search)
 }
 
 var (
@@ -196,4 +161,8 @@ func (s *storage) mustLoadDB(id uint64) db.DB {
 	}
 
 	return v.(db.DB)
+}
+
+func (s *storage) readBatch() raftstore.CommandReadBatch {
+	return newBatchReader(s)
 }

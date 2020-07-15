@@ -15,5 +15,5 @@ type Cfg struct {
 	LimitRebuildIndex    int
 	RebuildIndexInterval time.Duration
 
-	dbCreateFunc func(string, int, metapb.DBState) (db.DB, error)
+	dbCreateFunc func(string, uint64, int, metapb.DBState) (db.DB, error)
 }

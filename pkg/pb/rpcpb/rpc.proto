@@ -42,8 +42,8 @@ message AddResponse {
 
 // SearchRequest search request
 message SearchRequest {
-    repeated float xqs     = 1;
-    repeated int64 topks   = 2;
+    int64 topk             = 1;
+    repeated float xqs     = 2;
     repeated bytes bitmaps = 3;
 }
 

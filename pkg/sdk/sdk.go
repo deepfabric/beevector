@@ -42,7 +42,7 @@ type Client interface {
 	// Add add vectors with xids
 	Add(xbs []float32, xids []int64) error
 	// Search search topk with xb and bitmaps
-	Search(xq []float32, topk int64, bitmap []byte) ([]float32, []int64, error)
+	Search(topk int64, xq []float32, bitmap []byte) ([]float32, []int64, error)
 }
 
 type client struct {
@@ -91,11 +91,11 @@ func (c *client) Add(xbs []float32, xids []int64) error {
 	return nil
 }
 
-func (c *client) Search(xq []float32, topk int64, bitmap []byte) ([]float32, []int64, error) {
+func (c *client) Search(topk int64, xq []float32, bitmap []byte) ([]float32, []int64, error) {
 	req := &rpcpb.Request{}
 	req.Type = rpcpb.Search
 	req.Search.Xqs = xq
-	req.Search.Topks = []int64{topk}
+	req.Search.Topk = topk
 	req.Search.Bitmaps = [][]byte{bitmap}
 
 	resp, err := c.do(req)

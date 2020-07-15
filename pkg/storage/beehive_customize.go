@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"fmt"
-
 	bhmetapb "github.com/deepfabric/beehive/pb/metapb"
 	"github.com/deepfabric/beevector/pkg/db"
 	"github.com/deepfabric/beevector/pkg/pb/metapb"
@@ -19,7 +17,7 @@ func (s *storage) Created(shard bhmetapb.Shard) {
 	metadata := &metapb.DB{}
 	protoc.MustUnmarshal(metadata, shard.Data)
 
-	db, err := s.cfg.dbCreateFunc(fmt.Sprintf("%s/dbs-%d", s.cfg.DataPath, shard.ID),
+	db, err := s.cfg.dbCreateFunc(s.cfg.DataPath, shard.ID,
 		s.cfg.Dim, metadata.State)
 	if err != nil {
 		log.Fatalf("db %d created failed with %+v",
