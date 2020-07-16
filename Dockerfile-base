@@ -1,0 +1,15 @@
+FROM centos:7
+
+USER 0
+
+RUN yum -y install centos-release-scl
+
+RUN yum -y install devtoolset-8
+
+RUN curl -o go.tgz https://mirrors.ustc.edu.cn/golang/go1.14.5.linux-amd64.tar.gz && tar -C /usr/local -xzf go.tgz
+
+ENV GOPROXY=https://mirrors.aliyun.com/goproxy/,https://goproxy.cn,direct PATH=/usr/local/go/bin:${PATH} GOPATH=/root/go
+
+RUN yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+
+RUN yum -y install git scons make openblas-devel swig python-devel numpy glog-devel gflags-devel jemalloc-devel

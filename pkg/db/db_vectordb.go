@@ -107,7 +107,7 @@ func (v *vdb) Destroy() error {
 	}
 
 	v.destoried = true
-	return vectodb.Destroy()
+	return v.db.Destroy()
 }
 
 func (v *vdb) Clean() error {

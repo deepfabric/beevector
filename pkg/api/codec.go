@@ -9,11 +9,15 @@ import (
 )
 
 var (
-	c = &codec{}
-	// Decoder api decoder
-	Decoder = goetty.NewIntLengthFieldBasedDecoder(c)
-	// Encoder api encoder
-	Encoder = goetty.NewIntLengthFieldBasedEncoder(c)
+	c       = &codec{}
+	decoder = goetty.NewIntLengthFieldBasedDecoder(c)
+	encoder = goetty.NewIntLengthFieldBasedEncoder(c)
+
+	cc = &clientCodec{}
+	// Decoder client decoder
+	Decoder = goetty.NewIntLengthFieldBasedDecoder(cc)
+	// Encoder client encoder
+	Encoder = goetty.NewIntLengthFieldBasedEncoder(cc)
 )
 
 type codec struct {

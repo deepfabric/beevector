@@ -1,0 +1,8 @@
+FROM deepfabric/vectodb-build
+
+COPY ./dist/vectodb $GOPATH/src/github.com/infinivision/vectodb
+RUN cd $GOPATH/src/github.com/infinivision/vectodb \ 
+    && go mod vendor 
+RUN cd $GOPATH/src/github.com/infinivision/vectodb \ 
+    && source scl_source enable devtoolset-8 \
+    && scons -c && scons -j 8

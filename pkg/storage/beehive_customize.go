@@ -27,9 +27,17 @@ func (s *storage) Created(shard bhmetapb.Shard) {
 
 	s.dbs.Store(shard.ID, db)
 
-	log.Infof("db %d created with state %s",
+	total, err := db.Records()
+	if err != nil {
+		log.Fatalf("db %d created failed with %+v",
+			shard.ID,
+			err)
+	}
+
+	log.Infof("db %d created with state %s, %d records",
 		shard.ID,
-		metadata.State.String())
+		metadata.State.String(),
+		total)
 }
 
 func (s *storage) Destory(shard bhmetapb.Shard) {

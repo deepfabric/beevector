@@ -65,9 +65,8 @@ func NewTestStorage(t *testing.T, start bool) (Storage, func()) {
 	flag.Set("beehive-cfg", filepath.Join(tmp, "cfg.toml"))
 
 	cfg := Cfg{
-		DataPath:             tmp,
-		MaxRecords:           1,
-		RebuildIndexInterval: time.Second,
+		DataPath:   tmp,
+		MaxRecords: 1,
 	}
 
 	store, err := NewStorageWithOptions(cfg, s,

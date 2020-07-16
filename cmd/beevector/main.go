@@ -12,6 +12,7 @@ import (
 
 	beehiveStorage "github.com/deepfabric/beehive/storage"
 	"github.com/deepfabric/beehive/storage/badger"
+	"github.com/deepfabric/beevector/pkg/api"
 	"github.com/deepfabric/beevector/pkg/storage"
 	"github.com/deepfabric/beevector/pkg/util"
 	"github.com/deepfabric/prophet"
@@ -26,9 +27,8 @@ var (
 	version   = flag.Bool("version", false, "Show version info")
 
 	// about vectordb
-	dim                     = flag.Int("dim", 512, "VectorDB: dim")
-	limitRebuildIndex       = flag.Int("limit-rebuild", 2, "VectorDB: Max number of vectordbs to rebuild index")
-	rebuildIndexIntervalSec = flag.Int("rebuild-interval", 10, "VectorDB(sec): rebuild index interval")
+	dim        = flag.Int("dim", 512, "VectorDB: dim")
+	maxRecords = flag.Uint64("max", 1000000, "VectorDB: max records per shard")
 )
 
 var (
@@ -58,10 +58,9 @@ func main() {
 	}
 
 	cfg := storage.Cfg{
-		DataPath:             *data,
-		Dim:                  *dim,
-		LimitRebuildIndex:    *limitRebuildIndex,
-		RebuildIndexInterval: time.Second * time.Duration(*rebuildIndexIntervalSec),
+		DataPath:   *data,
+		Dim:        *dim,
+		MaxRecords: *maxRecords,
 	}
 
 	metaStore, err := badger.NewStorage(filepath.Join(*data, "badger-metadata"))
@@ -79,7 +78,20 @@ func main() {
 		log.Fatalf("create storage failed with %+v", err)
 	}
 
-	go store.Start()
+	err = store.Start()
+	if err != nil {
+		log.Fatalf("start storage failed with %+v", err)
+	}
+
+	svr, err := api.NewAPIServer(*addr, store)
+	if err != nil {
+		log.Fatalf("create api server failed with %+v", err)
+	}
+
+	err = svr.Start()
+	if err != nil {
+		log.Fatalf("start api server failed with %+v", err)
+	}
 
 	sc := make(chan os.Signal, 2)
 	signal.Notify(sc,

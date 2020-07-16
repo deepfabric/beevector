@@ -29,8 +29,8 @@ func NewAPIServer(addr string, store storage.Storage) (Server, error) {
 	return &server{
 		addr: addr,
 		svr: goetty.NewServer(addr,
-			goetty.WithServerDecoder(Decoder),
-			goetty.WithServerEncoder(Encoder),
+			goetty.WithServerDecoder(decoder),
+			goetty.WithServerEncoder(encoder),
 			goetty.WithServerReadBufSize(1024*1024),
 			goetty.WithServerWriteBufSize(1024*1024)),
 		store: store,

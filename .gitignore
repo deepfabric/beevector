@@ -16,3 +16,5 @@ vendor/
 
 .dist
 dist
+
+cmd/test
