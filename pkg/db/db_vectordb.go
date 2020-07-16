@@ -74,7 +74,7 @@ func (v *vdb) Add(xbs []float32, xids []int64) error {
 	return v.db.AddWithIds(xbs, xids)
 }
 
-func (v *vdb) Search(topk int, xqs []float32, bitmaps [][]byte, handler func(int, int, float32, int64) bool) error {
+func (v *vdb) Search(topk int, xqs []float32, bitmaps [][]byte, handler func(int, int, int, float32, int64) bool) error {
 	v.RLock()
 	defer v.RUnlock()
 
@@ -88,8 +88,9 @@ func (v *vdb) Search(topk int, xqs []float32, bitmaps [][]byte, handler func(int
 	}
 
 	for i, scores := range values {
+		n := len(scores)
 		for j, score := range scores {
-			if !handler(i, j, score.Score, score.Xid) {
+			if !handler(i, j, n, score.Score, score.Xid) {
 				break
 			}
 		}

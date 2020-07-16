@@ -26,6 +26,8 @@ raftElectionTick = 20
 # How many ticks to perform raft headrtbeat.
 raftHeartbeatTick = 2
 
+# Check the interval of shard split in seconds.
+shardSplitCheckDuration = 5
 
 [prophet]
 # The application and prophet RPC address, send heartbeats, alloc id, watch event, etc. required

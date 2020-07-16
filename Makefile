@@ -27,7 +27,7 @@ dist_dir: clean_dist_dir; $(info ======== prepare distribute dir:)
 	mkdir -p $(DIST_DIR)
 
 .PHONY: beevector
-beevector: dist_dir; $(info ======== compiled beevector)
+beevector: dist_dir test; $(info ======== compiled beevector)
 	env GO111MODULE=off GOOS=$(GOOS) go build -o $(DIST_DIR)beevector $(LD_FLAGS) $(ROOT_DIR)cmd/beevector/*.go
 
 .PHONY: checker
@@ -55,12 +55,7 @@ vectodb: dist_dir; $(info ======== make vectodb build docker image)
 	docker tag deepfabric/vectodb:$(VECTODB_VERSION) deepfabric/vectodb
 
 .PHONY: test
-test: ; $(info ======== test busybee)
-	env GO111MODULE=off go test -count=1 github.com/deepfabric/busybee/pkg/core
-	env GO111MODULE=off go test -count=1 github.com/deepfabric/busybee/pkg/storage
-	env GO111MODULE=off go test -count=1 github.com/deepfabric/busybee/pkg/queue
-	env GO111MODULE=off go test -count=1 github.com/deepfabric/busybee/pkg/notify
-	env GO111MODULE=off go test -count=1 github.com/deepfabric/busybee/pkg/expr
-	env GO111MODULE=off go test -count=1 github.com/deepfabric/busybee/pkg/api
-	env GO111MODULE=off go test -count=1 github.com/deepfabric/busybee/pkg/util
+test: ; $(info ======== test beevector)
+	env GO111MODULE=off go test -count=1 github.com/deepfabric/beevector/pkg/db
+
 .DEFAULT_GOAL := vectodb

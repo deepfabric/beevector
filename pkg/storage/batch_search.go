@@ -8,6 +8,10 @@ import (
 	"github.com/fagongzi/util/protoc"
 )
 
+var (
+	emptyBytes = protoc.MustMarshal(&rpcpb.SearchResponse{})
+)
+
 type batchReader struct {
 	shard uint64
 	store *storage
@@ -56,7 +60,8 @@ func (b *batchReader) Add(shard uint64, req *raftcmdpb.Request, attrs map[string
 	b.shard = shard
 	b.topks = append(b.topks, topk)
 	b.xqs = append(b.xqs, b.request.Xqs...)
-	b.bitmaps = append(b.bitmaps, b.request.Bitmaps...)
+	b.bitmaps = append(b.bitmaps, b.request.Bitmap)
+
 	return true, nil
 }
 
@@ -67,14 +72,23 @@ func (b *batchReader) Execute() ([]*raftcmdpb.Response, error) {
 		return nil, err
 	}
 
+	// empty response
+	if len(b.responses) == 0 {
+		for range b.topks {
+			resp := pb.AcquireResponse()
+			resp.Value = emptyBytes
+			b.responses = append(b.responses, resp)
+		}
+	}
+
 	return b.responses, nil
 }
 
-func (b *batchReader) cb(i int, j int, score float32, xid int64) bool {
+func (b *batchReader) cb(i, j, n int, score float32, xid int64) bool {
 	b.scores = append(b.scores, score)
 	b.xids = append(b.xids, xid)
 
-	if j >= b.topks[i]-1 {
+	if j >= b.topks[i]-1 || j == n-1 {
 		b.response.Reset()
 		b.response.Xids = b.xids
 		b.response.Scores = b.scores

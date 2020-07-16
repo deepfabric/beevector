@@ -91,7 +91,12 @@ func (s *storage) customSplitCheck(shard bhmetapb.Shard) ([]byte, bool) {
 	}
 
 	if total >= s.cfg.MaxRecords {
-		return goetty.Uint64ToBytes(total), true
+		n := uint64(0)
+		if len(shard.Start) > 0 {
+			n = goetty.Byte2UInt64(shard.Start)
+		}
+
+		return goetty.Uint64ToBytes(total + n), true
 	}
 
 	return nil, false
@@ -103,6 +108,7 @@ func (s *storage) customSplitCompleted(old *bhmetapb.Shard, new *bhmetapb.Shard)
 		State: metapb.RU,
 	})
 
+	new.Start = goetty.Uint64ToBytes(goetty.Byte2UInt64(old.End) + s.cfg.MaxRecords)
 	new.Data = protoc.MustMarshal(&metapb.DB{
 		State: metapb.RWU,
 	})

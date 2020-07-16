@@ -96,7 +96,7 @@ func (c *client) Search(topk int64, xq []float32, bitmap []byte) ([]float32, []i
 	req.Type = rpcpb.Search
 	req.Search.Xqs = xq
 	req.Search.Topk = topk
-	req.Search.Bitmaps = [][]byte{bitmap}
+	req.Search.Bitmap = bitmap
 
 	resp, err := c.do(req)
 	if err != nil {
