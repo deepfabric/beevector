@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/deepfabric/beehive/util"
+	"github.com/deepfabric/beevector/pkg/codec"
 	"github.com/deepfabric/beevector/pkg/pb/rpcpb"
 	"github.com/deepfabric/beevector/pkg/storage"
 	"github.com/fagongzi/goetty"
@@ -29,8 +30,8 @@ func NewAPIServer(addr string, store storage.Storage) (Server, error) {
 	return &server{
 		addr: addr,
 		svr: goetty.NewServer(addr,
-			goetty.WithServerDecoder(decoder),
-			goetty.WithServerEncoder(encoder),
+			goetty.WithServerDecoder(codec.ServerDecoder),
+			goetty.WithServerEncoder(codec.ServerEncoder),
 			goetty.WithServerReadBufSize(1024*1024),
 			goetty.WithServerWriteBufSize(1024*1024)),
 		store: store,

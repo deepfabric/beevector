@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/deepfabric/beehive/util"
-	"github.com/deepfabric/beevector/pkg/api"
+	"github.com/deepfabric/beevector/pkg/codec"
 	"github.com/deepfabric/beevector/pkg/pb/rpcpb"
 	"github.com/fagongzi/goetty"
 	"github.com/fagongzi/log"
@@ -64,8 +64,8 @@ func NewClient(addrs ...string) Client {
 	for _, addr := range addrs {
 		c.addrs = append(addrs, addr)
 		c.conns = append(c.conns, goetty.NewConnector(addr,
-			goetty.WithClientDecoder(api.Decoder),
-			goetty.WithClientEncoder(api.Encoder)))
+			goetty.WithClientDecoder(codec.ClientDecoder),
+			goetty.WithClientEncoder(codec.ClientEncoder)))
 		c.msgs = append(c.msgs, task.New(1024))
 	}
 

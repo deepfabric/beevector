@@ -1,4 +1,4 @@
-package api
+package codec
 
 import (
 	"fmt"
@@ -9,15 +9,17 @@ import (
 )
 
 var (
-	c       = &codec{}
-	decoder = goetty.NewIntLengthFieldBasedDecoder(c)
-	encoder = goetty.NewIntLengthFieldBasedEncoder(c)
+	c = &codec{}
+	// ServerDecoder server decoder
+	ServerDecoder = goetty.NewIntLengthFieldBasedDecoder(c)
+	// ServerEncoder server encoder
+	ServerEncoder = goetty.NewIntLengthFieldBasedEncoder(c)
 
 	cc = &clientCodec{}
-	// Decoder client decoder
-	Decoder = goetty.NewIntLengthFieldBasedDecoder(cc)
-	// Encoder client encoder
-	Encoder = goetty.NewIntLengthFieldBasedEncoder(cc)
+	// ClientDecoder client decoder
+	ClientDecoder = goetty.NewIntLengthFieldBasedDecoder(cc)
+	// ClientEncoder client encoder
+	ClientEncoder = goetty.NewIntLengthFieldBasedEncoder(cc)
 )
 
 type codec struct {
