@@ -10,6 +10,9 @@ import (
 )
 
 func (s *storage) Created(shard bhmetapb.Shard) {
+	log.Infof("ready to create db %d",
+		shard.ID)
+
 	if _, ok := s.dbs.Load(shard.ID); ok {
 		log.Fatalf("BUG: db %d already created", shard.ID)
 	}
@@ -41,6 +44,9 @@ func (s *storage) Created(shard bhmetapb.Shard) {
 }
 
 func (s *storage) Destory(shard bhmetapb.Shard) {
+	log.Infof("ready to remove db %d",
+		shard.ID)
+
 	if v, ok := s.dbs.Load(shard.ID); ok {
 		err := v.(db.DB).Destroy()
 		if err != nil {
@@ -49,6 +55,9 @@ func (s *storage) Destory(shard bhmetapb.Shard) {
 				err)
 		}
 	}
+
+	log.Infof("db %d removed",
+		shard.ID)
 }
 
 func (s *storage) Splited(shard bhmetapb.Shard) {
