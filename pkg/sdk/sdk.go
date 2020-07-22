@@ -43,6 +43,8 @@ type Client interface {
 	Add(xbs []float32, xids []int64) error
 	// Search search topk with xb and bitmaps
 	Search(topk int64, xq []float32, bitmap []byte) ([]float32, []int64, error)
+	// AsyncSearch async search
+	AsyncSearch(topk int64, xq []float32, bitmap []byte, cb func([]float32, []int64, error))
 }
 
 type client struct {
@@ -79,7 +81,7 @@ func (c *client) Add(xbs []float32, xids []int64) error {
 	req.Add.Xbs = xbs
 	req.Add.Xids = xids
 
-	resp, err := c.do(req)
+	resp, err := c.sycnDo(req)
 	if err != nil {
 		return err
 	}
@@ -98,7 +100,7 @@ func (c *client) Search(topk int64, xq []float32, bitmap []byte) ([]float32, []i
 	req.Search.Topk = topk
 	req.Search.Bitmap = bitmap
 
-	resp, err := c.do(req)
+	resp, err := c.sycnDo(req)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -110,19 +112,44 @@ func (c *client) Search(topk int64, xq []float32, bitmap []byte) ([]float32, []i
 	return resp.Search.Scores, resp.Search.Xids, nil
 }
 
-func (c *client) do(req *rpcpb.Request) (*rpcpb.Response, error) {
-	req.ID = c.nextID()
-	ctx := &ctx{
-		req: req,
-		c:   make(chan struct{}),
-	}
+func (c *client) AsyncSearch(topk int64, xq []float32, bitmap []byte, cb func([]float32, []int64, error)) {
+	req := &rpcpb.Request{}
+	req.Type = rpcpb.Search
+	req.Search.Xqs = xq
+	req.Search.Topk = topk
+	req.Search.Bitmap = bitmap
 
-	c.ctxs.Store(req.ID, ctx)
-	c.addCtxToQueue(ctx, -1)
-	util.DefaultTimeoutWheel().Schedule(defaultTimeout, c.timeout, req.ID)
+	c.asycnDo(req, func(resp *rpcpb.Response, err error) {
+		if err != nil {
+			cb(nil, nil, err)
+			return
+		}
 
+		if resp.Error.Error != "" {
+			cb(nil, nil, errors.New(resp.Error.Error))
+			return
+		}
+
+		cb(resp.Search.Scores, resp.Search.Xids, nil)
+	})
+}
+
+func (c *client) sycnDo(req *rpcpb.Request) (*rpcpb.Response, error) {
+	ctx := newSyncCtx(req)
+	c.do(ctx)
 	ctx.wait()
 	return ctx.resp, ctx.err
+}
+
+func (c *client) asycnDo(req *rpcpb.Request, cb func(*rpcpb.Response, error)) {
+	c.do(newAsyncCtx(req, cb))
+}
+
+func (c *client) do(ctx *ctx) {
+	ctx.req.ID = c.nextID()
+	c.ctxs.Store(ctx.req.ID, ctx)
+	c.addCtxToQueue(ctx, -1)
+	util.DefaultTimeoutWheel().Schedule(defaultTimeout, c.timeout, ctx.req.ID)
 }
 
 func (c *client) nextID() uint64 {
@@ -267,6 +294,24 @@ type ctx struct {
 	resp  *rpcpb.Response
 	err   error
 	c     chan struct{}
+	cb    func(resp *rpcpb.Response, err error)
+	sync  bool
+}
+
+func newSyncCtx(req *rpcpb.Request) *ctx {
+	return &ctx{
+		req:  req,
+		c:    make(chan struct{}),
+		sync: true,
+	}
+}
+
+func newAsyncCtx(req *rpcpb.Request, cb func(resp *rpcpb.Response, err error)) *ctx {
+	return &ctx{
+		req:  req,
+		cb:   cb,
+		sync: false,
+	}
 }
 
 func (c *ctx) done(resp *rpcpb.Response, err error) {
@@ -276,12 +321,18 @@ func (c *ctx) done(resp *rpcpb.Response, err error) {
 			resp,
 			err)
 
-		c.resp = resp
-		c.err = err
-		close(c.c)
+		if c.sync {
+			c.resp = resp
+			c.err = err
+			close(c.c)
+		} else {
+			c.cb(resp, err)
+		}
 	}
 }
 
 func (c *ctx) wait() {
-	<-c.c
+	if c.sync {
+		<-c.c
+	}
 }

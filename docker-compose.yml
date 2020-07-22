@@ -10,7 +10,8 @@ services:
       - --addr=node1:8080
       - --data=/tmp
       - --beehive-cfg=/etc/node.toml
-      - --max=1000
+      - --max=1000000
+      - --dim=128
 
   node2:
     image: deepfabric/beevector
@@ -22,7 +23,8 @@ services:
       - --addr=node2:8080
       - --data=/tmp
       - --beehive-cfg=/etc/node.toml
-      - --max=1000
+      - --max=1000000
+      - --dim=128
 
   node3:
     image: deepfabric/beevector
@@ -35,17 +37,5 @@ services:
       - --addr=node3:8080
       - --data=/tmp
       - --beehive-cfg=/etc/node.toml
-      - --max=1000
-
-  node4:
-    image: deepfabric/beevector
-    ports:
-      - "8084:8080"
-    volumes:
-      - ./cfg/node4.toml:/etc/node.toml
-    command: 
-      - --wait=10
-      - --addr=node4:8080
-      - --data=/tmp
-      - --beehive-cfg=/etc/node.toml
-      - --max=1000
+      - --max=1000000
+      - --dim=128

@@ -48,6 +48,7 @@ func (s *storage) Destory(shard bhmetapb.Shard) {
 		shard.ID)
 
 	if v, ok := s.dbs.Load(shard.ID); ok {
+		s.dbs.Delete(shard.ID)
 		err := v.(db.DB).Destroy()
 		if err != nil {
 			log.Fatalf("db %d destory failed with %+v",
@@ -112,7 +113,8 @@ func (s *storage) customSplitCheck(shard bhmetapb.Shard) ([]byte, bool) {
 }
 
 func (s *storage) customSplitCompleted(old *bhmetapb.Shard, new *bhmetapb.Shard) {
-	s.mustLoadDB(old.ID).UpdateState(metapb.RU)
+	db := s.mustLoadDB(old.ID)
+	db.UpdateState(metapb.RU)
 	old.Data = protoc.MustMarshal(&metapb.DB{
 		State: metapb.RU,
 	})
@@ -121,6 +123,16 @@ func (s *storage) customSplitCompleted(old *bhmetapb.Shard, new *bhmetapb.Shard)
 	new.Data = protoc.MustMarshal(&metapb.DB{
 		State: metapb.RWU,
 	})
+
+	total, err := db.Records()
+	if err != nil {
+		log.Fatalf("db %d check total records failed with %+v",
+			old.ID,
+			err)
+	}
+	log.Infof("db %d split at %d records",
+		old.ID,
+		total)
 }
 
 func (s *storage) customSnapshotDataCreate(path string, shard bhmetapb.Shard) error {
@@ -134,5 +146,6 @@ func (s *storage) customSnapshotDataApply(path string, shard bhmetapb.Shard) err
 }
 
 func (s *storage) customCanReadLocalFunc(shard bhmetapb.Shard) bool {
-	return s.mustLoadDB(shard.ID).State() == metapb.RU
+	value := s.mustLoadDB(shard.ID).State() == metapb.RU
+	return value
 }

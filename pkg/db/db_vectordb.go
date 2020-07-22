@@ -8,6 +8,7 @@ import (
 
 	"github.com/deepfabric/beehive/util"
 	"github.com/deepfabric/beevector/pkg/pb/metapb"
+	"github.com/fagongzi/log"
 	"github.com/infinivision/vectodb"
 )
 
@@ -196,7 +197,15 @@ func (v *vdb) resetDB() error {
 		return err
 	}
 
+	total, err := db.GetTotal()
+	if err != nil {
+		return err
+	}
+
 	v.db = db
 	v.destoried = false
+	log.Infof("db %d reset to %d records",
+		v.id,
+		total)
 	return nil
 }
