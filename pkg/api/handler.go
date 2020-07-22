@@ -35,7 +35,7 @@ func (s *server) doAdd(ctx ctx) error {
 }
 
 func (s *server) doSearch(ctx ctx) error {
-	s.store.AsyncBroadcastCommand(&ctx.req.Search, s.onBroadcastResp, ctx, true)
+	s.store.AsyncBroadcastCommand(&ctx.req.Search, s.onBroadcastResp, ctx, false)
 	return nil
 }
 
@@ -130,6 +130,10 @@ func newValues(responses []*rpcpb.SearchResponse) *values {
 }
 
 func (v *values) pop(topk int, resp *rpcpb.SearchResponse) {
+	if len(v.responses) == 0 {
+		return
+	}
+
 	n := len(v.responses[0].Scores)
 	if n == topk {
 		resp.Scores = v.responses[0].Scores

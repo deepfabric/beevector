@@ -11,13 +11,13 @@ import (
 var (
 	c = &codec{}
 	// ServerDecoder server decoder
-	ServerDecoder = goetty.NewIntLengthFieldBasedDecoder(c)
+	ServerDecoder = goetty.NewIntLengthFieldBasedDecoderSize(c, 0, 0, 0, 100*1024*1024)
 	// ServerEncoder server encoder
 	ServerEncoder = goetty.NewIntLengthFieldBasedEncoder(c)
 
 	cc = &clientCodec{}
 	// ClientDecoder client decoder
-	ClientDecoder = goetty.NewIntLengthFieldBasedDecoder(cc)
+	ClientDecoder = goetty.NewIntLengthFieldBasedDecoderSize(cc, 0, 0, 0, 100*1024*1024)
 	// ClientEncoder client encoder
 	ClientEncoder = goetty.NewIntLengthFieldBasedEncoder(cc)
 )

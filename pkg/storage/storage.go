@@ -60,12 +60,12 @@ func NewStorageWithOptions(cfg Cfg,
 		cfg:    cfg,
 		runner: task.NewRunner(),
 	}
+	opts = append(opts, raftstore.WithMemoryAsStorage())
 	opts = append(opts, raftstore.WithShardStateAware(s))
 	opts = append(opts, raftstore.WithCustomInitShardCreateFunc(s.customInitShardCreate))
 	opts = append(opts, raftstore.WithCustomSplitCheckFunc(s.customSplitCheck))
 	opts = append(opts, raftstore.WithCustomSplitCompletedFunc(s.customSplitCompleted))
 	opts = append(opts, raftstore.WithCustomCanReadLocalFunc(s.customCanReadLocalFunc))
-	opts = append(opts, raftstore.WithMaxProposalBytes(32*1024*1024))
 	opts = append(opts, raftstore.WithReadBatchFunc(s.readBatch))
 
 	store, err := beehive.CreateRaftStoreFromFile(cfg.DataPath,

@@ -146,6 +146,5 @@ func (s *storage) customSnapshotDataApply(path string, shard bhmetapb.Shard) err
 }
 
 func (s *storage) customCanReadLocalFunc(shard bhmetapb.Shard) bool {
-	value := s.mustLoadDB(shard.ID).State() == metapb.RU
-	return value
+	return true
 }

@@ -29,6 +29,8 @@ raftHeartbeatTick = 2
 # Check the interval of shard split in seconds.
 shardSplitCheckDuration = 5
 
+maxProposalBytes = 16
+
 [prophet]
 # The application and prophet RPC address, send heartbeats, alloc id, watch event, etc. required
 rpcAddr = "node3:9527"
