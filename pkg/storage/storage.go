@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	defaultRPCTimeout = time.Second * 30
+	defaultRPCTimeout = time.Minute * 5
 )
 
 // Storage beevector storage

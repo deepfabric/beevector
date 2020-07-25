@@ -3,7 +3,7 @@ module github.com/deepfabric/beevector
 go 1.14
 
 require (
-	github.com/deepfabric/beehive v0.0.0-20200722085819-471285b8e583
+	github.com/deepfabric/beehive v0.0.0-20200722122741-5c9c38015497
 	github.com/deepfabric/prophet v0.0.0-20200605082442-0c0aa24123f6
 	github.com/fagongzi/goetty v1.6.0
 	github.com/fagongzi/log v0.0.0-20191122063922-293b75312445

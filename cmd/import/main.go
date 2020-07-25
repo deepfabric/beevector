@@ -25,7 +25,7 @@ var (
 func main() {
 	flag.Parse()
 
-	cli := sdk.NewClient(*addr)
+	cli := sdk.NewClient([]string{*addr})
 
 	var xids []int64
 	n := int64(0)

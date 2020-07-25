@@ -14,11 +14,6 @@ import (
 	"github.com/fagongzi/util/task"
 )
 
-const (
-	batch          = int64(64)
-	defaultTimeout = time.Second * 30
-)
-
 var (
 	// ErrTimeout err timeout
 	ErrTimeout = errors.New("Request timeout")
@@ -48,6 +43,7 @@ type Client interface {
 }
 
 type client struct {
+	opts  *options
 	id    uint64
 	op    uint64
 	addrs []string
@@ -58,10 +54,16 @@ type client struct {
 }
 
 // NewClient create a beevector client
-func NewClient(addrs ...string) Client {
+func NewClient(addrs []string, opts ...Option) Client {
 	logger.Infof("create client with beevector servers %+v", addrs)
 
-	c := &client{}
+	c := &client{
+		opts: &options{},
+	}
+
+	for _, opt := range opts {
+		opt(c.opts)
+	}
 
 	for _, addr := range addrs {
 		c.addrs = append(addrs, addr)
@@ -149,7 +151,7 @@ func (c *client) do(ctx *ctx) {
 	ctx.req.ID = c.nextID()
 	c.ctxs.Store(ctx.req.ID, ctx)
 	c.addCtxToQueue(ctx, -1)
-	util.DefaultTimeoutWheel().Schedule(defaultTimeout, c.timeout, ctx.req.ID)
+	util.DefaultTimeoutWheel().Schedule(c.opts.timeout, c.timeout, ctx.req.ID)
 }
 
 func (c *client) nextID() uint64 {
@@ -183,10 +185,10 @@ func (c *client) writeLoop(idx int) {
 
 	q := c.msgs[idx]
 	conn := c.conns[idx]
-	items := make([]interface{}, batch, batch)
+	items := make([]interface{}, c.opts.batch, c.opts.batch)
 
 	for {
-		n, err := q.Get(batch, items)
+		n, err := q.Get(c.opts.batch, items)
 		if err != nil {
 			logger.Fatalf("BUG: queue failed with %+v", err)
 		}
