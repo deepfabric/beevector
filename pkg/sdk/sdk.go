@@ -64,6 +64,7 @@ func NewClient(addrs []string, opts ...Option) Client {
 	for _, opt := range opts {
 		opt(c.opts)
 	}
+	c.opts.adjust()
 
 	for _, addr := range addrs {
 		c.addrs = append(addrs, addr)
