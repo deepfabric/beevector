@@ -26,6 +26,8 @@ raftElectionTick = 20
 # How many ticks to perform raft headrtbeat.
 raftHeartbeatTick = 2
 
+raftThresholdCompactLog = 10
+
 # Check the interval of shard split in seconds.
 shardSplitCheckDuration = 5
 

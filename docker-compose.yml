@@ -10,7 +10,7 @@ services:
       - --addr=node1:8080
       - --data=/tmp
       - --beehive-cfg=/etc/node.toml
-      - --max=10000
+      - --max=1000000
       - --dim=512
 
   node2:
@@ -23,7 +23,7 @@ services:
       - --addr=node2:8080
       - --data=/tmp
       - --beehive-cfg=/etc/node.toml
-      - --max=10000
+      - --max=1000000
       - --dim=512
 
   node3:
@@ -37,5 +37,5 @@ services:
       - --addr=node3:8080
       - --data=/tmp
       - --beehive-cfg=/etc/node.toml
-      - --max=10000
+      - --max=1000000
       - --dim=512

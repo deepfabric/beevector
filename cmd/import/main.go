@@ -56,6 +56,10 @@ func main() {
 
 		xids = xids[:0]
 		log.Printf("%d completed", completed)
+
+		if completed >= *total {
+			os.Exit(0)
+		}
 	}
 
 	for {
