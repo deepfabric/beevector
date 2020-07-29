@@ -16,9 +16,9 @@ import (
 
 var (
 	addr  = flag.String("addr", "127.0.0.1:8081", "address")
-	batch = flag.Int64("b", 5000, "batch")
+	batch = flag.Int64("b", 10000, "batch")
 	total = flag.Int64("n", 1000000, "total")
-	dim   = flag.Int64("dim", 128, "dim")
+	dim   = flag.Int64("dim", 512, "dim")
 	file  = flag.String("file", "/data/sift1M/sift_base.fvecs", "import file")
 )
 
@@ -27,16 +27,26 @@ func main() {
 
 	cli := sdk.NewClient([]string{*addr})
 
+	n := (*dim) / 128
+	destXqs := make([]float32, 0, (*dim)*(*batch))
 	var xids []int64
-	n := int64(0)
+	completed := int64(0)
 	cb := func(xqs []float32, c int64) {
+		destXqs = destXqs[:0]
+
 		for i := int64(0); i < c; i++ {
-			n++
+			completed++
 			xids = append(xids, int64(util.EncodeXID(uint64(n), uint64(n))))
+
+			v := xqs[128*i : 128*(i+1)]
+			for j := int64(0); j < n; j++ {
+				destXqs = append(destXqs, v...)
+			}
 		}
 
+		normalizeVec(int(*dim), destXqs)
 		for {
-			err := cli.Add(xqs[:c*(*dim)], xids)
+			err := cli.Add(destXqs, xids)
 			if err == nil {
 				break
 			}
@@ -45,11 +55,11 @@ func main() {
 		}
 
 		xids = xids[:0]
-		log.Printf("%d completed", n)
+		log.Printf("%d completed", completed)
 	}
 
 	for {
-		err := read(*file, *batch, *dim, cb)
+		err := read(*file, *batch, 128, cb)
 		if err != nil {
 			log.Fatalf("import file %s failed with %+v", *file, err)
 		}
@@ -99,9 +109,10 @@ func read(file string, batch, dim int64, cb func([]float32, int64)) error {
 
 		c := int64(readed) / (4*dim + 4)
 		for i := int64(0); i < c; i++ {
-			data = append(data, *(*float32)(unsafe.Pointer(&buf[i*4+4])))
+			for j := int64(0); j < dim; j++ {
+				data = append(data, *(*float32)(unsafe.Pointer(&buf[j*4+4])))
+			}
 		}
-		normalizeVec(int(dim), data)
 		cb(data, c)
 		data = data[:0]
 	}
