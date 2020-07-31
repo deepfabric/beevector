@@ -64,7 +64,7 @@ func (v *mockDB) Add(xbs []float32, xids []int64) error {
 	return nil
 }
 
-func (v *mockDB) Search(topk int, xqs []float32, bitmaps [][]byte, handler func(int, int, int, float32, int64) bool) error {
+func (v *mockDB) Search(topk int, xqs []float32, bitmaps [][]byte, handler func(int, int, int, float32, int64) bool, topVectors bool) error {
 	v.RLock()
 	defer v.RUnlock()
 

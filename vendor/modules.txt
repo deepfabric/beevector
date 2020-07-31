@@ -179,7 +179,7 @@ github.com/grpc-ecosystem/go-grpc-prometheus
 github.com/grpc-ecosystem/grpc-gateway/internal
 github.com/grpc-ecosystem/grpc-gateway/runtime
 github.com/grpc-ecosystem/grpc-gateway/utilities
-# github.com/infinivision/vectodb v0.0.0-20200715120254-34cda87eebb9
+# github.com/infinivision/vectodb v0.0.0-20200731004229-bf34ac5d2383
 ## explicit
 github.com/infinivision/vectodb
 # github.com/jonboulle/clockwork v0.1.0

@@ -28,6 +28,6 @@ func TestAdd(t *testing.T) {
 
 		return true
 	}
-	assert.NoError(t, db.Search(1, values, nil, cb), "TestAdd failed")
+	assert.NoError(t, db.Search(1, values, nil, cb, false), "TestAdd failed")
 	assert.Equal(t, 1, c, "TestAdd failed")
 }

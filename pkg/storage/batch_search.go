@@ -13,17 +13,14 @@ var (
 )
 
 type batchReader struct {
-	shard uint64
 	store *storage
 
 	// reset
-	maxTopk   int
-	topks     []int
-	xqs       []float32
-	bitmaps   [][]byte
-	scores    []float32
-	xids      []int64
-	responses []*raftcmdpb.Response
+	shard                     uint64
+	idx                       int
+	responses                 []*raftcmdpb.Response
+	topVectorTrueSearchBatch  *searchBatch
+	topVectorFalseSearchBatch *searchBatch
 
 	// tmp
 	request  *rpcpb.SearchRequest
@@ -31,11 +28,16 @@ type batchReader struct {
 }
 
 func newBatchReader(store *storage) *batchReader {
-	return &batchReader{
+	b := &batchReader{
 		store:    store,
 		request:  &rpcpb.SearchRequest{},
 		response: &rpcpb.SearchResponse{},
 	}
+
+	b.topVectorTrueSearchBatch = newSearchBatch(b, true)
+	b.topVectorFalseSearchBatch = newSearchBatch(b, false)
+
+	return b
 }
 
 func (b *batchReader) Add(shard uint64, req *raftcmdpb.Request, attrs map[string]interface{}) (bool, error) {
@@ -52,63 +54,116 @@ func (b *batchReader) Add(shard uint64, req *raftcmdpb.Request, attrs map[string
 	b.request.Reset()
 	protoc.MustUnmarshal(b.request, req.Cmd)
 
-	topk := int(b.request.Topk)
-	if topk > b.maxTopk {
-		b.maxTopk = topk
+	if b.request.TopVectors {
+		b.topVectorTrueSearchBatch.add(b.request, b.idx)
+	} else {
+		b.topVectorFalseSearchBatch.add(b.request, b.idx)
 	}
 
 	b.shard = shard
-	b.topks = append(b.topks, topk)
-	b.xqs = append(b.xqs, b.request.Xqs...)
-	b.bitmaps = append(b.bitmaps, b.request.Bitmap)
-
+	b.responses = append(b.responses, pb.AcquireResponse())
+	b.idx++
 	return true, nil
 }
 
 func (b *batchReader) Execute() ([]*raftcmdpb.Response, error) {
-	db := b.store.mustLoadDB(b.shard)
-	err := db.Search(b.maxTopk, b.xqs, b.bitmaps, b.cb)
+	err := b.topVectorTrueSearchBatch.exec()
 	if err != nil {
 		return nil, err
 	}
 
-	// empty response
-	if len(b.responses) == 0 {
-		for range b.topks {
-			resp := pb.AcquireResponse()
-			resp.Value = emptyBytes
-			b.responses = append(b.responses, resp)
-		}
+	err = b.topVectorFalseSearchBatch.exec()
+	if err != nil {
+		return nil, err
 	}
 
 	return b.responses, nil
 }
 
-func (b *batchReader) cb(i, j, n int, score float32, xid int64) bool {
-	b.scores = append(b.scores, score)
-	b.xids = append(b.xids, xid)
+func (b *batchReader) Reset() {
+	b.shard = 0
+	b.idx = 0
+	b.responses = b.responses[:0]
+	b.topVectorTrueSearchBatch.reset()
+	b.topVectorFalseSearchBatch.reset()
+}
 
-	if j >= b.topks[i]-1 || j == n-1 {
-		b.response.Reset()
-		b.response.Xids = b.xids
-		b.response.Scores = b.scores
+type searchBatch struct {
+	b          *batchReader
+	topVectors bool
 
-		resp := pb.AcquireResponse()
-		resp.Value = protoc.MustMarshal(b.response)
-		b.responses = append(b.responses, resp)
+	// reset
+	maxTopk int
+	topks   []int
+	xqs     []float32
+	bitmaps [][]byte
+	scores  []float32
+	xids    []int64
+	indexes []int
+}
+
+func newSearchBatch(b *batchReader, topVectors bool) *searchBatch {
+	return &searchBatch{
+		b:          b,
+		topVectors: topVectors,
+	}
+}
+
+func (sb *searchBatch) add(req *rpcpb.SearchRequest, idx int) {
+	topk := int(req.Topk)
+	if topk > sb.maxTopk {
+		sb.maxTopk = topk
+	}
+
+	sb.topks = append(sb.topks, topk)
+	sb.xqs = append(sb.xqs, req.Xqs...)
+	sb.bitmaps = append(sb.bitmaps, req.Bitmap)
+	sb.indexes = append(sb.indexes, idx)
+}
+
+func (sb *searchBatch) exec() error {
+	if len(sb.topks) == 0 {
+		return nil
+	}
+
+	db := sb.b.store.mustLoadDB(sb.b.shard)
+	err := db.Search(sb.maxTopk, sb.xqs, sb.bitmaps, sb.cb, sb.topVectors)
+	if err != nil {
+		return err
+	}
+
+	// empty response
+	if len(sb.scores) == 0 {
+		for idx := range sb.topks {
+			sb.b.responses[sb.indexes[idx]].Value = emptyBytes
+		}
+	}
+
+	return nil
+}
+
+func (sb *searchBatch) cb(i, j, n int, score float32, xid int64) bool {
+	sb.scores = append(sb.scores, score)
+	sb.xids = append(sb.xids, xid)
+
+	if j >= sb.topks[i]-1 || j == n-1 {
+		sb.b.response.Reset()
+		sb.b.response.Xids = sb.xids
+		sb.b.response.Scores = sb.scores
+
+		sb.b.responses[sb.indexes[i]].Value = protoc.MustMarshal(sb.b.response)
 		return false
 	}
 
 	return true
 }
 
-func (b *batchReader) Reset() {
-	b.shard = 0
-	b.maxTopk = 0
-	b.xqs = b.xqs[:0]
-	b.scores = b.scores[:0]
-	b.xids = b.xids[:0]
-	b.bitmaps = b.bitmaps[:0]
-	b.topks = b.topks[:0]
-	b.responses = b.responses[:0]
+func (sb *searchBatch) reset() {
+	sb.maxTopk = 0
+	sb.xqs = sb.xqs[:0]
+	sb.scores = sb.scores[:0]
+	sb.xids = sb.xids[:0]
+	sb.bitmaps = sb.bitmaps[:0]
+	sb.topks = sb.topks[:0]
+	sb.indexes = sb.indexes[:0]
 }

@@ -157,7 +157,7 @@ func (s *storage) AddLocalFunc(cmd string, cmdType uint64, cb raftstore.LocalCom
 func (s *storage) mustLoadDB(id uint64) db.DB {
 	v, ok := s.dbs.Load(id)
 	if !ok {
-		log.Fatalf("BUG: missing db %d")
+		log.Fatalf("BUG: missing db %d", id)
 	}
 
 	return v.(db.DB)

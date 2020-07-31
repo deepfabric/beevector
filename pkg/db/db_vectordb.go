@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/deepfabric/beehive/util"
 	"github.com/deepfabric/beevector/pkg/pb/metapb"
@@ -75,7 +76,7 @@ func (v *vdb) Add(xbs []float32, xids []int64) error {
 	return v.db.AddWithIds(xbs, xids)
 }
 
-func (v *vdb) Search(topk int, xqs []float32, bitmaps [][]byte, handler func(int, int, int, float32, int64) bool) error {
+func (v *vdb) Search(topk int, xqs []float32, bitmaps [][]byte, handler func(int, int, int, float32, int64) bool, topVectors bool) error {
 	v.RLock()
 	defer v.RUnlock()
 
@@ -83,7 +84,19 @@ func (v *vdb) Search(topk int, xqs []float32, bitmaps [][]byte, handler func(int
 		return errDestoried
 	}
 
-	values, err := v.db.Search(topk, xqs, bitmaps)
+	n := len(xqs) / v.dim
+	s := time.Now()
+	log.Infof("start query %d requests from shard %d",
+		n,
+		v.id)
+	values, err := v.db.Search(topk, topVectors, xqs, bitmaps)
+	e := time.Now()
+	log.Infof("end query %d requests from shard %d, cost %f, err %+v",
+		n,
+		v.id,
+		e.Sub(s).Seconds(),
+		err)
+
 	if err != nil {
 		return err
 	}

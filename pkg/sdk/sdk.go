@@ -37,9 +37,9 @@ type Client interface {
 	// Add add vectors with xids
 	Add(xbs []float32, xids []int64) error
 	// Search search topk with xb and bitmaps
-	Search(topk int64, xq []float32, bitmap []byte) ([]float32, []int64, error)
+	Search(topk int64, xq []float32, bitmap []byte, topVectors bool) ([]float32, []int64, error)
 	// AsyncSearch async search
-	AsyncSearch(topk int64, xq []float32, bitmap []byte, cb func([]float32, []int64, error))
+	AsyncSearch(topk int64, xq []float32, bitmap []byte, cb func([]float32, []int64, error), topVectors bool)
 }
 
 type client struct {
@@ -96,12 +96,13 @@ func (c *client) Add(xbs []float32, xids []int64) error {
 	return nil
 }
 
-func (c *client) Search(topk int64, xq []float32, bitmap []byte) ([]float32, []int64, error) {
+func (c *client) Search(topk int64, xq []float32, bitmap []byte, topVectors bool) ([]float32, []int64, error) {
 	req := &rpcpb.Request{}
 	req.Type = rpcpb.Search
 	req.Search.Xqs = xq
 	req.Search.Topk = topk
 	req.Search.Bitmap = bitmap
+	req.Search.TopVectors = topVectors
 
 	resp, err := c.sycnDo(req)
 	if err != nil {
@@ -115,12 +116,13 @@ func (c *client) Search(topk int64, xq []float32, bitmap []byte) ([]float32, []i
 	return resp.Search.Scores, resp.Search.Xids, nil
 }
 
-func (c *client) AsyncSearch(topk int64, xq []float32, bitmap []byte, cb func([]float32, []int64, error)) {
+func (c *client) AsyncSearch(topk int64, xq []float32, bitmap []byte, cb func([]float32, []int64, error), topVectors bool) {
 	req := &rpcpb.Request{}
 	req.Type = rpcpb.Search
 	req.Search.Xqs = xq
 	req.Search.Topk = topk
 	req.Search.Bitmap = bitmap
+	req.Search.TopVectors = topVectors
 
 	c.asycnDo(req, func(resp *rpcpb.Response, err error) {
 		if err != nil {

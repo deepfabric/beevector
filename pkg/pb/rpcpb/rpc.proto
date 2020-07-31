@@ -42,9 +42,10 @@ message AddResponse {
 
 // SearchRequest search request
 message SearchRequest {
-    int64          topk    = 1;
-    repeated float xqs     = 2;
-    bytes          bitmap  = 3;
+    int64          topk       = 1;
+    repeated float xqs        = 2;
+    bytes          bitmap     = 3;
+    bool           topVectors = 4;
 }
 
 // SearchResponse search response

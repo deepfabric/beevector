@@ -14,12 +14,13 @@ import (
 )
 
 var (
-	con   = flag.Uint64("c", 1, "The clients.")
-	cn    = flag.Uint64("cn", 64, "The concurrency per client.")
-	top   = flag.Int64("top", 1, "Top k.")
-	dim   = flag.Int64("dim", 128, "dim")
-	num   = flag.Uint64("n", 0, "The total number.")
-	addrs = flag.String("addr", "172.19.0.106:8091,172.19.0.107:8091,172.19.0.108:8091,172.19.0.103:8091,172.19.0.101:8091", "addrs")
+	con        = flag.Uint64("c", 10, "The clients.")
+	cn         = flag.Uint64("cn", 100, "The concurrency per client.")
+	top        = flag.Int64("top", 1, "Top k.")
+	dim        = flag.Int64("dim", 512, "dim")
+	num        = flag.Uint64("n", 0, "The total number.")
+	topVectors = flag.Bool("v", false, "TopVectors param.")
+	addrs      = flag.String("addr", "127.0.0.1:8081", "addrs")
 )
 
 func main() {
@@ -102,7 +103,7 @@ func startG(total uint64, wg, complate *sync.WaitGroup, ready chan struct{}, ans
 				if atomic.AddUint64(&n, 1) == *cn {
 					close(w)
 				}
-			})
+			}, *topVectors)
 		}
 
 		s := time.Now()
