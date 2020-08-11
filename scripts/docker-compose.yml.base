@@ -1,0 +1,15 @@
+version: '2.1'
+services:
+  node1:
+    image: deepfabric/beevector
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./node1.toml:/etc/node.toml
+      - {data}:/data
+    command: 
+      - --addr=node1:8080
+      - --data=/data
+      - --beehive-cfg=/etc/node.toml
+      - --max={max}
+      - --dim={dim}
